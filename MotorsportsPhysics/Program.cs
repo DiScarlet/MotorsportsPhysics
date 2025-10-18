@@ -11,7 +11,10 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddDbContext<MotorsportsDbContext>(options =>
 {
-    var cs = builder.Configuration.GetConnectionString("DefaultConnection");
+    var envConn = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+    var cs = string.IsNullOrWhiteSpace(envConn)
+        ? builder.Configuration.GetConnectionString("DefaultConnection")
+        : envConn;
     options.UseSqlServer(cs);
 });
 

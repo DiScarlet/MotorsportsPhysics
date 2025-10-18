@@ -1,7 +1,5 @@
 using System.Security.Cryptography;
 using System.Text;
-using Azure.Identity;
-using Azure.Security.KeyVault.Secrets;
 
 namespace MotorsportsPhysics.Services;
 
@@ -35,14 +33,14 @@ public class PasswordSecurityService
         return Convert.ToBase64String(salt);
     }
 
-    private static async Task<string> GetPepperAsync()
+    private static Task<string> GetPepperAsync()
     {
-        const string secretName = "PasswordPepper";
-        const string keyVaultName = "MotoKeyVault"; // TODO: make configurable
-        var kvUri = $"https://{keyVaultName}.vault.azure.net";
-
-        var client = new SecretClient(new Uri(kvUri), new DefaultAzureCredential());
-        var secret = await client.GetSecretAsync(secretName);
-        return secret.Value.Value;
+        // Read from environment variable. Use USER-SECRETS or CI secrets for development/deploy.
+        var pepper = Environment.GetEnvironmentVariable("PasswordPepper");
+        if (string.IsNullOrWhiteSpace(pepper))
+        {
+            throw new InvalidOperationException("Missing environment variable 'PasswordPepper'. Set it before running the app.");
+        }
+        return Task.FromResult(pepper);
     }
 }
