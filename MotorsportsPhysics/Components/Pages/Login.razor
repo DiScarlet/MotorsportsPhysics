@@ -1,0 +1,53 @@
+@using MotorsportsPhysics.Data
+@using MotorsportsPhysics.Models
+@using MotorsportsPhysics.Services
+@using Microsoft.AspNetCore.Authentication
+@inject MotorsportsDbContext _context
+@inject PasswordSecurityService PasswordSecurity
+@inject IHttpContextAccessor Http
+@inject NavigationManager Nav
+
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@page "/login"
+
+<div class="relative flex min-h-[70vh] w-full flex-col items-center justify-center p-4">
+  <div class="w-full max-w-md rounded-lg bg-background-light/80 p-8 shadow-2xl backdrop-blur-sm dark:bg-background-dark/80">
+    <div class="text-center mb-6">
+      <h1 class="text-2xl font-bold">Log in</h1>
+      <p class="text-sm text-black/70 dark:text-white/70">Welcome back</p>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+      <div class="mb-4 text-center text-red-600">@_error</div>
+    }
+    @if (!string.IsNullOrEmpty(_success))
+    {
+      <div class="mb-4 text-center text-green-600">@_success</div>
+    }
+
+    <form class="space-y-4" method="post" action="/auth/login">
+       <div>
+         <label class="sr-only" for="username">Username</label>
+         <input id="username" name="UserName" class="w-full rounded bg-black/10 px-4 py-3 text-black dark:bg-white/10 dark:text-white" value="@Model.UserName" placeholder="Username" />
+       </div>
+      <div>
+        <label class="sr-only" for="password">Password</label>
+         <input type="password" id="password" name="Password" class="w-full rounded bg-black/10 px-4 py-3 text-black dark:bg-white/10 dark:text-white" value="@Model.Password" placeholder="Password" />
+      </div>
+      <button class="w-full rounded bg-primary py-3 text-sm font-bold text-white shadow transition-transform hover:scale-105" type="submit">Log In</button>
+      </form>
+
+    <div class="mt-6 text-center">
+      <a class="text-sm text-black/70 underline-offset-4 hover:text-primary hover:underline dark:text-white/70 dark:hover:text-primary" href="/signUp">Need an account? Sign Up</a>
+    </div>
+  </div>
+</div>
+
+@code {
+  public class LoginVm { public string UserName { get; set; } = string.Empty; public string Password { get; set; } = string.Empty; }
+  public LoginVm Model { get; set; } = new();
+  string _error = string.Empty;
+  string _success = string.Empty;
+  // Server handles login via POST /auth/login
+}

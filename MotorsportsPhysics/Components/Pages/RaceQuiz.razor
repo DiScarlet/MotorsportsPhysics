@@ -5,6 +5,9 @@
 @using MotorsportsPhysics.Components.Pages
 @using MotorsportsPhysics.Components.Shared
 @inject IJSRuntime JS
+@inject MotorsportsPhysics.Data.MotorsportsDbContext Db
+@inject MotorsportsPhysics.Services.LeaderboardService Leaderboard
+@inject IHttpContextAccessor Http
 
 <PageTitle>Race Quiz</PageTitle>
 
@@ -334,6 +337,17 @@ else
       }
       try { _quizRef?.SetExternalPlacement(_finalPosition, _finalTotalCars); } catch { }
       StateHasChanged();
+      // Persist score to DB Leaderboard
+      try
+      {
+        var levelName = TopicToLevelName(_topic);
+        var diff = _label; // Easy/Medium/High label
+        // Best lap time from telemetry (min elapsed of laps where user sample exists). Fallback to total race time.
+        int bestLapMs = ComputeBestLapMs();
+        int? finishedPos = _finalPosition;
+        await Leaderboard.SaveAsync(Http, Db, diff, levelName, bestLapMs, finishedPos);
+      }
+      catch { }
     }
     catch { }
   }
@@ -346,6 +360,45 @@ else
       else if (!_isEasy && _mediumRace is not null) await _mediumRace.StopAsync();
     }
     catch { }
+  }
+
+  private int ComputeBestLapMs()
+  {
+    try
+    {
+      var ms = _telemetry
+        .Where(t => t is not null && t.Samples.Any(s => s.IsUser))
+        .Select(t => (int)Math.Round(t.ElapsedMs))
+        .Where(v => v > 0)
+        .DefaultIfEmpty(
+          (int)Math.Max(
+            0,
+            (_raceFinishedUtc ?? DateTime.UtcNow) // end
+              .Subtract(_raceStartedUtc ?? DateTime.UtcNow) // TimeSpan
+              .TotalMilliseconds
+          )
+        )
+        .Min();
+      return ms;
+    }
+    catch
+    {
+      var span = (_raceFinishedUtc ?? DateTime.UtcNow).Subtract(_raceStartedUtc ?? DateTime.UtcNow);
+      return (int)Math.Max(0, span.TotalMilliseconds);
+    }
+  }
+
+  private static string TopicToLevelName(string topic)
+  {
+    return (topic ?? "cornering").ToLowerInvariant() switch
+    {
+      "cornering" => "Monaco Grand Prix",
+      "aerodynamics" => "Silverstone Grand Prix",
+      "acceleration" => "Spa-Francorchamps Grand Prix",
+      "topspeed" => "Monza Grand Prix",
+      "downforce" => "Suzuka Grand Prix",
+      _ => "Cornering"
+    };
   }
 
   private async Task BeginQuizAndRace()

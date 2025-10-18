@@ -7,7 +7,9 @@
 
 @inject MotorsportsDbContext _context
 @inject PasswordSecurityService PasswordSecurity
+@inject NavigationManager Nav
 
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
 @page "/signUp"
 
 <div class="relative flex min-h-[85vh] w-full flex-col items-center justify-center overflow-x-hidden p-4">
@@ -42,7 +44,7 @@
                 <label class="sr-only" for="password">Password</label>
                 <InputText type="password" id="password" class="w-full rounded border-none bg-black/10 px-4 py-3 text-black placeholder-black/50 ring-1 ring-inset ring-transparent transition focus:bg-white focus:text-black focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary dark:bg-white/10 dark:text-white dark:placeholder-white/50 dark:focus:bg-background-dark dark:focus:text-white" @bind-Value="Password" placeholder="Password" />
             </div>
-            <button class="w-full rounded bg-primary py-3 text-sm font-bold text-white shadow-lg transition-transform duration-200 ease-in-out hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background-light dark:focus-visible:ring-offset-background-dark" type="submit">Sign In</button>
+            <button class="w-full rounded bg-primary py-3 text-sm font-bold text-white shadow-lg transition-transform duration-200 ease-in-out hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background-light dark:focus-visible:ring-offset-background-dark" type="submit">Sign Up</button>
         </EditForm>
 
         @if (!string.IsNullOrEmpty(_error))
@@ -55,7 +57,7 @@
         }
 
         <div class="mt-6 text-center">
-            <a class="text-sm text-black/70 underline-offset-4 hover:text-primary hover:underline dark:text-white/70 dark:hover:text-primary" href="#">Don't have an account? Sign Up</a>
+            <a class="text-sm text-black/70 underline-offset-4 hover:text-primary hover:underline dark:text-white/70 dark:hover:text-primary" href="/login">Already have an account? Log in</a>
         </div>
     </div>
 </div>
@@ -99,8 +101,10 @@
 
             _context.Users.Add(test);
             await _context.SaveChangesAsync();
-
-            _success = "Saved to database using Entra (AAD) connection.";
+            
+            // Redirect to login after successful sign-up
+            Nav.NavigateTo("/login", forceLoad: false);
+            return;
         }
         catch (Exception ex)
         {

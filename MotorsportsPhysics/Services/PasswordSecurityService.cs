@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -24,6 +25,36 @@ public class PasswordSecurityService
 
         var hash = Convert.ToBase64String(hashBytes);
         return (hash, salt);
+    }
+
+    public async Task<bool> VerifyAsync(string password, string salt, string expectedBase64Hash)
+    {
+        if (string.IsNullOrEmpty(expectedBase64Hash)) return false;
+        var pepper = await GetPepperAsync();
+        var saltPepper = salt + pepper;
+
+        var derived = Rfc2898DeriveBytes.Pbkdf2(
+            Encoding.UTF8.GetBytes(password),
+            Encoding.UTF8.GetBytes(saltPepper),
+            Iterations,
+            HashAlgorithmName.SHA512,
+            KeySize);
+
+        Console.WriteLine($"[DEBUG] VerifyAsync password: der '{Convert.ToBase64String(derived)}' exp {expectedBase64Hash}");
+
+        var expectedBytes = Convert.FromBase64String(expectedBase64Hash);
+        return FixedTimeEquals(derived, expectedBytes);
+    }
+
+    private static bool FixedTimeEquals(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    {
+        if (a.Length != b.Length) return false;
+        int diff = 0;
+        for (int i = 0; i < a.Length; i++)
+        {
+            diff |= a[i] ^ b[i];
+        }
+        return diff == 0;
     }
 
     private static string GenerateSalt()
