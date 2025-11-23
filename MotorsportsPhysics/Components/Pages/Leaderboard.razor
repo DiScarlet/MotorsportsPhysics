@@ -1,0 +1,96 @@
+@page "/leaderboard"
+@using MotorsportsPhysics.Data
+@using MotorsportsPhysics.Models
+@using LeaderboardModel = MotorsportsPhysics.Models.Leaderboard
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@attribute [AllowAnonymous]
+@inject MotorsportsDbContext Db
+
+<PageTitle>Leaderboard</PageTitle>
+
+<div class="container mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-10">
+  <h1 class="text-3xl font-bold mb-6">Leaderboard</h1>
+
+  <div class="mb-4 flex flex-wrap items-center gap-3">
+    <label class="text-sm">Filter:</label>
+    <select class="rounded border px-3 py-1" @bind="difficulty">
+      <option value="">All difficulties</option>
+      <option>Easy</option>
+      <option>Medium</option>
+      <option>High</option>
+    </select>
+    <input class="rounded border px-3 py-1" placeholder="Level (e.g., Monaco)" @bind="level" />
+    <button class="rounded bg-primary text-white px-4 py-1" @onclick="ApplyFilter">Apply</button>
+  </div>
+
+  @if (rows is null)
+  {
+    <p class="text-gray-600">Loading…</p>
+  }
+  else if (rows.Count == 0)
+  {
+    <p class="text-gray-600">No results yet. Race a quiz to post your first time!</p>
+  }
+  else
+  {
+    <div class="overflow-x-auto rounded-lg border border-primary/20 bg-white shadow-sm">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-3">#</th>
+            <th class="px-4 py-3">User</th>
+            <th class="px-4 py-3">Difficulty</th>
+            <th class="px-4 py-3">Level</th>
+            <th class="px-4 py-3">Best Lap</th>
+            <th class="px-4 py-3">Finish</th>
+          </tr>
+        </thead>
+        <tbody>
+  @foreach (LeaderboardModel r in rows)
+        {
+          <tr class="border-t hover:bg-gray-50">
+            <td class="px-4 py-2">@r.Position</td>
+            <td class="px-4 py-2">@r.UserName</td>
+            <td class="px-4 py-2">@r.Difficulty</td>
+            <td class="px-4 py-2">@r.LevelName</td>
+            <td class="px-4 py-2">@FormatMs(r.LapTimeMs)</td>
+            <td class="px-4 py-2">@(r.FinishedPosition is null ? "—" : r.FinishedPosition.ToString())</td>
+          </tr>
+        }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+@code {
+  private string difficulty = string.Empty;
+  private string level = string.Empty;
+  private List<LeaderboardModel>? rows;
+
+  protected override void OnInitialized()
+  {
+    Load();
+  }
+
+  private void ApplyFilter()
+  {
+    Load();
+  }
+
+  private void Load()
+  {
+  var q = Db.Leaderboards.AsQueryable();
+    if (!string.IsNullOrWhiteSpace(difficulty)) q = q.Where(x => x.Difficulty == difficulty);
+    if (!string.IsNullOrWhiteSpace(level)) q = q.Where(x => x.LevelName == level);
+  rows = q.OrderBy(x => x.Position).Take(200).ToList();
+  }
+
+  private static string FormatMs(int? ms)
+  {
+    if (ms is null) return "—";
+    var t = TimeSpan.FromMilliseconds(ms.Value);
+    return t.TotalMinutes >= 1 ? $"{(int)t.TotalMinutes}:{t.Seconds:00}.{t.Milliseconds/10:00}" : $"{t.Seconds}.{t.Milliseconds/10:00}s";
+  }
+}

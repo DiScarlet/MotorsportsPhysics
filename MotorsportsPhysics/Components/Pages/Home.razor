@@ -1,7 +1,100 @@
 ﻿@page "/"
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Motorsports Physics</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="relative min-h-[70vh] w-full">
+	<!-- Ambient background glow -->
+	<div class="fixed inset-0 -z-10 pointer-events-none overflow-visible">
+		<div class="absolute -top-[25vh] -left-[25vw] w-[60vw] h-[60vw] bg-primary/10 dark:bg-primary/5 rounded-full blur-[120px]"></div>
+		<div class="absolute -bottom-[25vh] -right-[25vw] w-[55vw] h-[55vw] bg-primary/20 dark:bg-primary/10 rounded-full blur-[120px]"></div>
+	</div>
 
-Welcome to your new app.
+	<main class="container mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-12">
+		<!-- Hero -->
+		<section class="text-center mb-12">
+			<h1 class="text-4xl md:text-5xl font-extrabold tracking-tight mb-3">Learn racecraft through physics</h1>
+			<p class="text-lg text-text-muted-light dark:text-text-muted-dark max-w-3xl mx-auto">
+				Motorsports Physics turns core racing concepts into interactive simulations and short quizzes. Pick a topic,
+				explore with the track simulator, then test yourself in a race-quiz.
+			</p>
+			<div class="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+				<a class="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 font-semibold text-white hover:bg-opacity-90"
+					 href="/topics">Start learning</a>
+				<a class="inline-flex items-center justify-center rounded-lg border border-primary/40 px-6 py-3 font-semibold hover:bg-primary/10"
+					 href="/track">Try the track simulator</a>
+			</div>
+		</section>
+
+		<!-- The Idea -->
+		<section class="mb-12 grid gap-6 md:grid-cols-2 items-center">
+			<div>
+				<h2 class="text-2xl font-bold mb-2">What’s the idea?</h2>
+				<p class="text-text-muted-light dark:text-text-muted-dark">
+					We learn better by doing. Each module focuses on a concrete part of driving — cornering, aero balance,
+					acceleration, tire behavior — and lets you manipulate the variables that actually matter on track.
+					Visual feedback and quick questions help you build intuition lap by lap.
+				</p>
+			</div>
+			<div class="rounded-xl border border-primary/20 p-5 bg-surface-light dark:bg-surface-dark">
+				<ul class="list-disc pl-5 space-y-1 text-text-muted-light dark:text-text-muted-dark">
+					<li>Short learning loops: simulate → observe → answer → improve</li>
+					<li>Clear mental models for braking points, lines, grip, and airflow</li>
+					<li>No fluff — concepts grounded in real racing scenarios</li>
+				</ul>
+			</div>
+		</section>
+
+		<!-- How it works -->
+		<section class="mb-12">
+			<h2 class="text-2xl font-bold mb-4 text-center">How it works</h2>
+			<div class="grid gap-6 md:grid-cols-3">
+				<div class="rounded-xl border border-primary/20 bg-white dark:bg-background-dark p-6 shadow-sm">
+					<h3 class="font-semibold mb-2">1) Pick a topic</h3>
+					<p class="text-sm text-text-muted-light dark:text-text-muted-dark">Choose a Grand Prix to focus your practice — each one centers on a physics theme.</p>
+					<a class="mt-3 inline-block text-primary hover:underline" href="/topics">Browse topics →</a>
+				</div>
+				<div class="rounded-xl border border-primary/20 bg-white dark:bg-background-dark p-6 shadow-sm">
+					<h3 class="font-semibold mb-2">2) Explore the sim</h3>
+					<p class="text-sm text-text-muted-light dark:text-text-muted-dark">Use the track simulator to tweak speed, line, and transforms, and see the impact immediately.</p>
+					<a class="mt-3 inline-block text-primary hover:underline" href="/track">Open simulator →</a>
+				</div>
+				<div class="rounded-xl border border-primary/20 bg-white dark:bg-background-dark p-6 shadow-sm">
+					<h3 class="font-semibold mb-2">3) Race the quiz</h3>
+					<p class="text-sm text-text-muted-light dark:text-text-muted-dark">Answer targeted questions while “racing” rivals. Different modes match your pace.</p>
+					<a class="mt-3 inline-block text-primary hover:underline" href="/race-menu">Choose a mode →</a>
+				</div>
+			</div>
+		</section>
+
+		<!-- Rules / Modes -->
+		<section class="mb-12">
+			<h2 class="text-2xl font-bold mb-4 text-center">Race-quiz modes and rules</h2>
+			<div class="grid gap-6 md:grid-cols-3">
+				<div class="rounded-xl border border-primary/20 bg-surface-light dark:bg-surface-dark p-6">
+					<h3 class="text-xl font-semibold mb-2">Easy</h3>
+					<p class="text-sm text-text-muted-light dark:text-text-muted-dark">Animated track. One question at a time with explanations. No rivals, no timer.</p>
+				</div>
+				<div class="rounded-xl border border-primary/20 bg-surface-light dark:bg-surface-dark p-6">
+					<h3 class="text-xl font-semibold mb-2">Medium</h3>
+					<p class="text-sm text-text-muted-light dark:text-text-muted-dark">Race five rivals as the yellow car. Explanations on. No timer. Your car never stops for unanswered questions.</p>
+				</div>
+				<div class="rounded-xl border border-primary/20 bg-surface-light dark:bg-surface-dark p-6">
+					<h3 class="text-xl font-semibold mb-2">High</h3>
+					<p class="text-sm text-text-muted-light dark:text-text-muted-dark">Race five rivals. Countdown timer. Explanations off. If question n isn’t answered by lap n, you stop at start/finish while rivals continue.</p>
+				</div>
+			</div>
+			<div class="mt-6 text-center">
+				<a class="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 font-semibold text-white hover:bg-opacity-90" href="/race-menu">Go to race menu</a>
+			</div>
+		</section>
+
+		<!-- Quick links -->
+		<section class="text-center">
+			<div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+				<a class="inline-flex items-center justify-center rounded-lg border border-primary/40 px-6 py-3 font-semibold hover:bg-primary/10" href="/login">Log in</a>
+				<a class="inline-flex items-center justify-center rounded-lg border border-primary/40 px-6 py-3 font-semibold hover:bg-primary/10" href="/signup">Create an account</a>
+			</div>
+			<p class="mt-3 text-sm text-text-muted-light dark:text-text-muted-dark">Accounts let you track progress and unlock more content.</p>
+		</section>
+	</main>
+</div>

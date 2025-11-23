@@ -10,6 +10,69 @@
 				"$msCompile"
 			],
 			"group": "build"
+		},
+		{
+			"label": "Build MotorsportsPhysics",
+			"type": "shell",
+			"command": "dotnet build .\\MotorsportsPhysics\\MotorsportsPhysics.sln",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Build MotorsportsPhysics",
+			"type": "shell",
+			"command": "dotnet build .\\MotorsportsPhysics\\MotorsportsPhysics.sln",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Build MotorsportsPhysics",
+			"type": "shell",
+			"command": "dotnet build .\\MotorsportsPhysics\\MotorsportsPhysics.sln",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Build MotorsportsPhysics",
+			"type": "shell",
+			"command": "dotnet build .\\MotorsportsPhysics\\MotorsportsPhysics.sln",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Build MotorsportsPhysics",
+			"type": "shell",
+			"command": "dotnet build .\\MotorsportsPhysics\\MotorsportsPhysics.sln",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Build MotorsportsPhysics",
+			"type": "shell",
+			"command": "dotnet build .\\MotorsportsPhysics\\MotorsportsPhysics.sln",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Build MotorsportsPhysics",
+			"type": "shell",
+			"command": "dotnet build .\\MotorsportsPhysics\\MotorsportsPhysics.sln",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Build MotorsportsPhysics",
+			"type": "shell",
+			"command": "dotnet build .\\MotorsportsPhysics\\MotorsportsPhysics.sln",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Build MotorsportsPhysics",
+			"type": "shell",
+			"command": "dotnet build .\\MotorsportsPhysics\\MotorsportsPhysics.sln",
+			"isBackground": false,
+			"group": "build"
 		}
 	]
 }

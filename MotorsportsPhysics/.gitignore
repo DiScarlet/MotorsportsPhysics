@@ -445,4 +445,5 @@ tools/
 tmp/
 temp/
 
+Properties/launchSettings.json
 appsettings.json

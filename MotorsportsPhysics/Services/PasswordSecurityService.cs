@@ -1,7 +1,6 @@
+using System.Linq.Expressions;
 using System.Security.Cryptography;
 using System.Text;
-using Azure.Identity;
-using Azure.Security.KeyVault.Secrets;
 
 namespace MotorsportsPhysics.Services;
 
@@ -28,6 +27,36 @@ public class PasswordSecurityService
         return (hash, salt);
     }
 
+    public async Task<bool> VerifyAsync(string password, string salt, string expectedBase64Hash)
+    {
+        if (string.IsNullOrEmpty(expectedBase64Hash)) return false;
+        var pepper = await GetPepperAsync();
+        var saltPepper = salt + pepper;
+
+        var derived = Rfc2898DeriveBytes.Pbkdf2(
+            Encoding.UTF8.GetBytes(password),
+            Encoding.UTF8.GetBytes(saltPepper),
+            Iterations,
+            HashAlgorithmName.SHA512,
+            KeySize);
+
+        Console.WriteLine($"[DEBUG] VerifyAsync password: der '{Convert.ToBase64String(derived)}' exp {expectedBase64Hash}");
+
+        var expectedBytes = Convert.FromBase64String(expectedBase64Hash);
+        return FixedTimeEquals(derived, expectedBytes);
+    }
+
+    private static bool FixedTimeEquals(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    {
+        if (a.Length != b.Length) return false;
+        int diff = 0;
+        for (int i = 0; i < a.Length; i++)
+        {
+            diff |= a[i] ^ b[i];
+        }
+        return diff == 0;
+    }
+
     private static string GenerateSalt()
     {
         Span<byte> salt = stackalloc byte[SaltSize];
@@ -35,14 +64,14 @@ public class PasswordSecurityService
         return Convert.ToBase64String(salt);
     }
 
-    private static async Task<string> GetPepperAsync()
+    private static Task<string> GetPepperAsync()
     {
-        const string secretName = "PasswordPepper";
-        const string keyVaultName = "MotoKeyVault"; // TODO: make configurable
-        var kvUri = $"https://{keyVaultName}.vault.azure.net";
-
-        var client = new SecretClient(new Uri(kvUri), new DefaultAzureCredential());
-        var secret = await client.GetSecretAsync(secretName);
-        return secret.Value.Value;
+        // Read from environment variable. Use USER-SECRETS or CI secrets for development/deploy.
+        var pepper = Environment.GetEnvironmentVariable("PasswordPepper");
+        if (string.IsNullOrWhiteSpace(pepper))
+        {
+            throw new InvalidOperationException("Missing environment variable 'PasswordPepper'. Set it before running the app.");
+        }
+        return Task.FromResult(pepper);
     }
 }
