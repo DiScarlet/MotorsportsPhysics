@@ -33,14 +33,36 @@ builder.Services.AddDbContext<MotorsportsDbContext>(options =>
     var cs = string.IsNullOrWhiteSpace(envConn)
         ? builder.Configuration.GetConnectionString("DefaultConnection")
         : envConn;
-    options.UseSqlServer(cs);
+    // Enable connection resiliency and sensible timeouts
+    options.UseSqlServer(cs, sqlOptions =>
+    {
+        sqlOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(10), errorNumbersToAdd: null);
+    });
 });
 
 builder.Services.AddSingleton<PasswordSecurityService>();
-builder.Services.AddSingleton<LeaderboardService>();
-
+builder.Services.AddScoped<LeaderboardService>();
 
 var app = builder.Build();
+
+// Validate DB connection at startup (log useful errors for AAD / network issues)
+using (var scope = app.Services.CreateScope())
+{
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<MotorsportsDbContext>();
+        // Try open/close to surface connection/authentication errors early
+        db.Database.SetCommandTimeout(30);
+        db.Database.OpenConnection();
+        db.Database.CloseConnection();
+        logger.LogInformation("Database connection validated successfully.");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Failed to validate database connection. Check connection string, network/firewall and authentication (AAD/SQL auth).\nError: {Message}", ex.Message);
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

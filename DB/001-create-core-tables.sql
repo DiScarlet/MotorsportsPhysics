@@ -1,0 +1,21 @@
+CREATE TABLE dbo.Users
+(
+    Id UNIQUEIDENTIFIER NOT NULL PRIMARY KEY DEFAULT NEWID(),
+    FirstName NVARCHAR(128) NOT NULL,
+    LastName NVARCHAR(128) NOT NULL,
+    UserName NVARCHAR(128) NOT NULL CONSTRAINT UQ_Users_UserName UNIQUE,
+    PasswordHashPHC NVARCHAR(512) NOT NULL,
+    PasswordUpdatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    ProfilePicture VARBINARY(MAX) NOT NULL,
+    ProfilePictureType NVARCHAR(64) NOT NULL
+);
+
+CREATE TABLE dbo.Leaderboard
+(
+    Position INT NOT NULL,
+    UserName NVARCHAR(128) REFERENCES dbo.Users (UserName),
+    Difficulty NVARCHAR(128) NOT NULL,
+    LevelName NVARCHAR(128) NOT NULL,
+    LapTimeMs INT,
+    FinishedPosition INT
+);
