@@ -6,6 +6,7 @@ CREATE TABLE dbo.Users
     UserName NVARCHAR(128) NOT NULL CONSTRAINT UQ_Users_UserName UNIQUE,
     PasswordHashPHC NVARCHAR(512) NOT NULL,
     PasswordUpdatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    PasswordSalt VARCHAR(255) NULL,
     ProfilePicture VARBINARY(MAX) NOT NULL,
     ProfilePictureType NVARCHAR(64) NOT NULL
 );
