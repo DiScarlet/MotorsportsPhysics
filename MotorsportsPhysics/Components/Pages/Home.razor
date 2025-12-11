@@ -2,39 +2,51 @@
 
 <PageTitle>Motorsports Physics</PageTitle>
 
-<div class="relative min-h-[70vh] w-full">
+@using Microsoft.AspNetCore.Components
+@inject NavigationManager Nav
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<div class="relative min-h-[70vh] w-full" style="background-color: white;">
 	<!-- Ambient background glow -->
 	<div class="fixed inset-0 -z-10 pointer-events-none overflow-visible">
 		<div class="absolute -top-[25vh] -left-[25vw] w-[60vw] h-[60vw] bg-primary/10 dark:bg-primary/5 rounded-full blur-[120px]"></div>
 		<div class="absolute -bottom-[25vh] -right-[25vw] w-[55vw] h-[55vw] bg-primary/20 dark:bg-primary/10 rounded-full blur-[120px]"></div>
 	</div>
 
-	<main class="container mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-12">
+	<main class="w-full px-4 sm:px-6 lg:px-8 py-12">
+		<div class="grid grid-cols-1 lg:grid-cols-2 gap-0 min-h-screen">
+			<!-- Left column with Maxie background -->
+			<div>
+				<MaxieSection @ref="maxieSection" ShowGreeting="showGreeting" OnNameSubmitted="HandleNameSubmitted" />
+			</div>
+			
+			<!-- Content on the right -->
+			<div>
 		<!-- Hero -->
 		<section class="text-center mb-12">
-			<h1 class="text-4xl md:text-5xl font-extrabold tracking-tight mb-3">Learn racecraft through physics</h1>
-			<p class="text-lg text-text-muted-light dark:text-text-muted-dark max-w-3xl mx-auto">
+			<h1 style="font-family: 'Orbitron', sans-serif; text-transform: uppercase; letter-spacing: 0.05em;" class="text-4xl md:text-5xl font-extrabold tracking-tight mb-3 text-black">Learn racecraft through physics</h1>
+			<p style="font-family: 'Rajdhani', sans-serif;" class="text-lg text-black max-w-3xl mx-auto">
 				Motorsports Physics turns core racing concepts into interactive simulations and short quizzes. Pick a topic,
 				explore with the track simulator, then test yourself in a race-quiz.
 			</p>
 			<div class="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
-				<a class="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 font-semibold text-white hover:bg-opacity-90"
-					 href="/topics">Start learning</a>
+				<button class="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 font-semibold text-white hover:bg-opacity-90 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="@(maxieSection?.ShowNameInput ?? false)" @onclick="HandleStartLearning">@buttonText</button>
 			</div>
 		</section>
 
 		<!-- The Idea -->
 		<section class="mb-12 grid gap-6 md:grid-cols-2 items-center">
 			<div>
-				<h2 class="text-2xl font-bold mb-2">What’s the idea?</h2>
-				<p class="text-text-muted-light dark:text-text-muted-dark">
+			<h2 style="font-family: 'Orbitron', sans-serif; text-transform: uppercase; letter-spacing: 0.05em;" class="text-2xl font-bold mb-2 text-black">What's the idea?</h2>
+			<p style="font-family: 'Rajdhani', sans-serif;" class="text-black">
 					We learn better by doing. Each module focuses on a concrete part of driving — cornering, aero balance,
 					acceleration, tire behavior — and lets you manipulate the variables that actually matter on track.
 					Visual feedback and quick questions help you build intuition lap by lap.
 				</p>
 			</div>
 			<div class="rounded-xl border border-primary/20 p-5 bg-surface-light dark:bg-surface-dark">
-				<ul class="list-disc pl-5 space-y-1 text-text-muted-light dark:text-text-muted-dark">
+				<ul style="font-family: 'Rajdhani', sans-serif;" class="list-disc pl-5 space-y-1 text-black">
 					<li>Short learning loops: simulate → observe → answer → improve</li>
 					<li>Clear mental models for braking points, lines, grip, and airflow</li>
 					<li>No fluff — concepts grounded in real racing scenarios</li>
@@ -44,21 +56,21 @@
 
 		<!-- How it works -->
 		<section class="mb-12">
-			<h2 class="text-2xl font-bold mb-4 text-center">How it works</h2>
+			<h2 style="font-family: 'Orbitron', sans-serif; text-transform: uppercase; letter-spacing: 0.05em;" class="text-2xl font-bold mb-4 text-center text-black">How it works</h2>
 			<div class="grid gap-6 md:grid-cols-3">
-				<div class="rounded-xl border border-primary/20 bg-white dark:bg-background-dark p-6 shadow-sm">
-					<h3 class="font-semibold mb-2">1) Pick a topic</h3>
-					<p class="text-sm text-text-muted-light dark:text-text-muted-dark">Choose a Grand Prix to focus your practice — each one centers on a physics theme.</p>
+			<div class="rounded-xl border border-primary/20 bg-white dark:bg-background-dark p-6 shadow-sm">
+				<h3 style="font-family: 'Orbitron', sans-serif;" class="font-semibold mb-2">1) Pick a topic</h3>
+				<p style="font-family: 'Rajdhani', sans-serif;" class="text-sm text-text-muted-light dark:text-text-muted-dark">Choose a Grand Prix to focus your practice — each one centers on a physics theme.</p>
 					<a class="mt-3 inline-block text-primary hover:underline" href="/topics">Browse topics →</a>
 				</div>
-				<div class="rounded-xl border border-primary/20 bg-white dark:bg-background-dark p-6 shadow-sm">
-					<h3 class="font-semibold mb-2">2) Explore the sim</h3>
-					<p class="text-sm text-text-muted-light dark:text-text-muted-dark">Use the track simulator to tweak speed, line, and transforms, and see the impact immediately.</p>
+			<div class="rounded-xl border border-primary/20 bg-white dark:bg-background-dark p-6 shadow-sm">
+				<h3 style="font-family: 'Orbitron', sans-serif;" class="font-semibold mb-2">2) Explore the sim</h3>
+				<p style="font-family: 'Rajdhani', sans-serif;" class="text-sm text-text-muted-light dark:text-text-muted-dark">Use the track simulator to tweak speed, line, and transforms, and see the impact immediately.</p>
 					<a class="mt-3 inline-block text-primary hover:underline" href="/track">Open simulator →</a>
 				</div>
-				<div class="rounded-xl border border-primary/20 bg-white dark:bg-background-dark p-6 shadow-sm">
-					<h3 class="font-semibold mb-2">3) Race the quiz</h3>
-					<p class="text-sm text-text-muted-light dark:text-text-muted-dark">Answer targeted questions while “racing” rivals. Different modes match your pace.</p>
+			<div class="rounded-xl border border-primary/20 bg-white dark:bg-background-dark p-6 shadow-sm">
+				<h3 style="font-family: 'Orbitron', sans-serif;" class="font-semibold mb-2">3) Race the quiz</h3>
+				<p style="font-family: 'Rajdhani', sans-serif;" class="text-sm text-text-muted-light dark:text-text-muted-dark">Answer targeted questions while "racing" rivals. Different modes match your pace.</p>
 					<a class="mt-3 inline-block text-primary hover:underline" href="/race-menu">Choose a mode →</a>
 				</div>
 			</div>
@@ -66,19 +78,19 @@
 
 		<!-- Rules / Modes -->
 		<section class="mb-12">
-			<h2 class="text-2xl font-bold mb-4 text-center">Race-quiz modes and rules</h2>
+			<h2 style="font-family: 'Orbitron', sans-serif; text-transform: uppercase; letter-spacing: 0.05em;" class="text-2xl font-bold mb-4 text-center text-black">Race-quiz modes and rules</h2>
 			<div class="grid gap-6 md:grid-cols-3">
-				<div class="rounded-xl border border-primary/20 bg-surface-light dark:bg-surface-dark p-6">
-					<h3 class="text-xl font-semibold mb-2">Easy</h3>
-					<p class="text-sm text-text-muted-light dark:text-text-muted-dark">Animated track. One question at a time with explanations. No rivals, no timer.</p>
+		<div class="rounded-xl border border-primary/20 bg-surface-light dark:bg-surface-dark p-6">
+			<h3 style="font-family: 'Orbitron', sans-serif;" class="text-xl font-semibold mb-2 text-black">Easy</h3>
+			<p style="font-family: 'Rajdhani', sans-serif;" class="text-sm text-black">Animated track. One question at a time with explanations. No rivals, no timer.</p>
 				</div>
-				<div class="rounded-xl border border-primary/20 bg-surface-light dark:bg-surface-dark p-6">
-					<h3 class="text-xl font-semibold mb-2">Medium</h3>
-					<p class="text-sm text-text-muted-light dark:text-text-muted-dark">Race five rivals as the yellow car. Explanations on. No timer. Your car never stops for unanswered questions.</p>
+		<div class="rounded-xl border border-primary/20 bg-surface-light dark:bg-surface-dark p-6">
+			<h3 style="font-family: 'Orbitron', sans-serif;" class="text-xl font-semibold mb-2 text-black">Medium</h3>
+			<p style="font-family: 'Rajdhani', sans-serif;" class="text-sm text-black">Race five rivals as the yellow car. Explanations on. No timer. Your car never stops for unanswered questions.</p>
 				</div>
-				<div class="rounded-xl border border-primary/20 bg-surface-light dark:bg-surface-dark p-6">
-					<h3 class="text-xl font-semibold mb-2">High</h3>
-					<p class="text-sm text-text-muted-light dark:text-text-muted-dark">Race five rivals. Countdown timer. Explanations off. If question n isn’t answered by lap n, you stop at start/finish while rivals continue.</p>
+		<div class="rounded-xl border border-primary/20 bg-surface-light dark:bg-surface-dark p-6">
+			<h3 style="font-family: 'Orbitron', sans-serif;" class="text-xl font-semibold mb-2 text-black">High</h3>
+			<p style="font-family: 'Rajdhani', sans-serif;" class="text-sm text-black">Race five rivals. Countdown timer. Explanations off. If question n isn't answered by lap n, you stop at start/finish while rivals continue.</p>
 				</div>
 			</div>
 			<div class="mt-6 text-center">
@@ -89,10 +101,170 @@
 		<!-- Quick links -->
 		<section class="text-center">
 			<div class="flex flex-col sm:flex-row items-center justify-center gap-3">
-				<a class="inline-flex items-center justify-center rounded-lg border border-primary/40 px-6 py-3 font-semibold hover:bg-primary/10" href="/login">Log in</a>
-				<a class="inline-flex items-center justify-center rounded-lg border border-primary/40 px-6 py-3 font-semibold hover:bg-primary/10" href="/signup">Create an account</a>
+				<a style="font-family: 'Rajdhani', sans-serif;" class="inline-flex items-center justify-center rounded-lg border border-primary/40 px-6 py-3 font-semibold hover:bg-primary/10" href="/login">Log in</a>
+				<a style="font-family: 'Rajdhani', sans-serif;" class="inline-flex items-center justify-center rounded-lg border border-primary/40 px-6 py-3 font-semibold hover:bg-primary/10" href="/signup">Create an account</a>
 			</div>
-			<p class="mt-3 text-sm text-text-muted-light dark:text-text-muted-dark">Accounts let you track progress and unlock more content.</p>
+			<p style="font-family: 'Rajdhani', sans-serif;" class="mt-3 text-sm text-text-muted-light dark:text-text-muted-dark">Accounts let you track progress and unlock more content.</p>
 		</section>
+	</div>
+	</div>
 	</main>
 </div>
+
+
+@code {
+    private MaxieSection? maxieSection;
+
+    private bool showGreeting = false;
+    private string buttonText = "Start Learning";
+
+    private int dialogueIndex = 0;
+    private string playerName = "";
+
+    private List<string> dialogue = new();
+
+    private void HandleStartLearning()
+    {
+        if (!showGreeting)
+        {
+            // First click → reveal Maxi + start intro
+            showGreeting = true;
+            buttonText = "Continue";
+            StartIntroDialogue();
+        }
+        else
+        {
+            // All other clicks → continue dialogue
+            ContinueDialogue();
+        }
+    }
+
+    private void StartIntroDialogue()
+    {
+        dialogue = new()
+        {
+            "Hey! Whoa — didn't expect anyone in the garage this early.",
+            "(smiles, brushing rubber dust off gloves)",
+            "Name's Maxi — driver for PitData Insights Racing.",
+            "But hey, I don't want to yell across the garage — what should I call you?"
+        };
+
+        dialogueIndex = 0;
+
+        maxieSection?.ShowDialogue(dialogue[dialogueIndex], false);
+    }
+
+    public async Task HandleNameSubmitted(string name)
+    {
+        playerName = name;
+
+        dialogue = new()
+        {
+            $"Alright, {playerName}. Nice to meet you.",
+            "Tell me you're the new race engineer they promised? Please?",
+            "Because honestly… this team really needs someone like you.",
+            "Great — you just made my season already.",
+            "Look… I'll be straight with you:",
+            "We've been struggling. The car's good — but not good *enough*.",
+            "Rivals are improving every session. We need an edge.",
+            "And that edge is *physics*. Real racecraft physics.",
+            "Every question you answer gives me more performance:",
+            "More grip. Better aero balance. Faster corner exits. Cleaner overtakes.",
+            "The championship is broken into tracks — each track has difficulty stages.",
+            "At each stage you get a racing physics question.",
+            "Answer correctly → I gain time, boost, or an overtake chance.",
+            "Answer wrong… well… I might lose a position.",
+            "But hey — no pressure. (grins)",
+            "So tell me, engineer — ready to fight back and bring this team to the top?"
+        };
+
+        dialogueIndex = 0;
+        maxieSection?.ShowDialogue(dialogue[dialogueIndex], true);
+    }
+
+    public void SubmitPlayerName()
+    {
+        if (string.IsNullOrWhiteSpace(playerName))
+            return;
+
+        dialogue = new()
+        {
+            $"Alright, {playerName}. Nice to meet you.",
+            "Tell me you're the new race engineer they promised? Please?",
+            "Because honestly… this team really needs someone like you.",
+            "Great — you just made my season already.",
+            "Look… I’ll be straight with you:",
+            "We’ve been struggling. The car’s good — but not good *enough*.",
+            "Rivals are improving every session. We need an edge.",
+            "And that edge is *physics*. Real racecraft physics.",
+            "Every question you answer gives me more performance:",
+            "More grip. Better aero balance. Faster corner exits. Cleaner overtakes.",
+            "The championship is broken into tracks — each track has difficulty stages.",
+            "At each stage you get a racing physics question.",
+            "Answer correctly → I gain time, boost, or an overtake chance.",
+            "Answer wrong… well… I might lose a position.",
+            "But hey — no pressure. (grins)",
+            "So tell me, engineer — ready to fight back and bring this team to the top?"
+        };
+
+        dialogueIndex = 0;
+        ContinueDialogue();
+    }
+
+    public void ContinueDialogue()
+    {
+        dialogueIndex++;
+
+        if (dialogueIndex >= dialogue.Count)
+        {
+            // We've reached the end of dialogue - redirect to topics
+            Nav.NavigateTo("/topics");
+            return;
+        }
+
+        // Show current dialogue first
+        maxieSection?.ShowDialogue(dialogue[dialogueIndex]);
+
+        // Detect the moment Maxi asks for the name
+        if (dialogue[dialogueIndex].Contains("what should I call you"))
+        {
+            maxieSection?.ShowNameInputField();
+            return;
+        }
+
+        // Show sad image for "We've been struggling" phrase
+        if (dialogue[dialogueIndex].Contains("We've been struggling"))
+        {
+            maxieSection?.SetMaxieSad(true);
+        }
+        else
+        {
+            // Show greet image for "Name's Maxi" and the next 4 phrases (indices 0-3 in post-name)
+            bool shouldShowGreet = false;
+            
+            // In intro dialogue: show greet at index 2 (Name's Maxi)
+            if (dialogue.Count == 4 && dialogueIndex == 2)
+            {
+                shouldShowGreet = true;
+            }
+            // In post-name dialogue: show greet for indices 0-3 (first 4 phrases after name)
+            else if (dialogue.Count > 4 && dialogueIndex >= 0 && dialogueIndex <= 3)
+            {
+                shouldShowGreet = true;
+            }
+            
+            maxieSection?.SetMaxieGreet(shouldShowGreet);
+        }
+
+        // Check if the current line is the "Tell me you're the new race engineer" phrase
+        if (dialogue[dialogueIndex].Contains("Tell me you're the new race engineer"))
+        {
+            buttonText = "Yes";
+        }
+        else if (buttonText == "Yes")
+        {
+            // Reset button text back to "Continue" after "Yes" is clicked
+            buttonText = "Continue";
+        }
+    }
+}

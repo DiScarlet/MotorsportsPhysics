@@ -1,0 +1,140 @@
+<div class="flex items-start justify-center relative w-full">
+	<div class="relative w-full">
+		<img src="/images/Maxie/Maxie-garage.png" alt="Maxie" class="w-full object-contain" />
+
+		@if (ShowGreeting)
+		{
+			@if (ShowMaxieSad)
+			{
+				<img src="/images/Maxie/Maxie-sad.png" alt="Maxie Sad"
+	                 class="absolute top-[68%] left-[31%] transform -translate-x-1/2 -translate-y-1/2 w-48 h-50 object-contain" />
+			}
+			else if (ShowMaxieGreet)
+			{
+				<img src="/images/Maxie/Maxie-greet.png" alt="Maxie Greeting"
+	                 class="absolute top-[68%] left-[31%] transform -translate-x-1/2 -translate-y-1/2 w-48 h-50 object-contain" />
+			}
+			else
+			{
+				<img src="/images/Maxie/Maxie-neutral.png" alt="Maxie Neutral"
+	                 class="absolute top-[68%] left-[31%] transform -translate-x-1/2 -translate-y-1/2 w-48 h-50 object-contain" />
+			}
+
+			<img src="/images/Maxie/bubble-left.png" alt="Bubble"
+                 class="absolute top-[14%] left-[10%] w-20% h-42% object-contain" />
+
+			<div class="absolute top-[27%] left-[52%] transform -translate-x-1/2 w-96 text-center">
+				<p class="text-black text-xl font-semibold">@CurrentDialogue.Text</p>
+			</div>
+
+			@if (ShowNameInput)
+			{
+				<div class="absolute top-[47%] left-[60%] transform -translate-x-1/2 -translate-y-1/2 flex flex-col gap-2 items-center z-10">
+					<input class="px-4 py-2 rounded bg-white text-black placeholder-gray-400"
+						placeholder="Your name…"
+						@bind="PlayerName" />
+
+					<button class="px-6 py-2 bg-primary text-white rounded font-semibold hover:bg-opacity-90"
+							@onclick="SubmitName">
+						Confirm
+					</button>
+				</div>
+			}
+		}
+	</div>
+</div>
+
+@code {
+
+	[Parameter]
+	public bool ShowGreeting { get; set; } = false;
+
+	[Parameter]
+	public EventCallback OnContinue { get; set; }
+
+	[Parameter]
+	public EventCallback<string> OnNameSubmitted { get; set; }
+
+	private bool showNameInput = false;
+	private string playerName = "";
+	private bool showMaxieGreet = false;
+	private bool showMaxieSad = false;
+
+	public bool ShowNameInput => showNameInput;
+	public string PlayerName { get => playerName; set => playerName = value; }
+	public bool ShowMaxieGreet => showMaxieGreet;
+	public bool ShowMaxieSad => showMaxieSad;
+
+	private int phraseIndex = 0;
+
+	private string[] phrases = new[]
+	{
+		"Hello!",
+		"So, you are my new race engineer? What is your name?"
+	};
+
+	public class DialogueLine
+	{
+		public string Speaker { get; set; } = string.Empty;
+		public string Text { get; set; } = string.Empty;
+	}
+
+	private DialogueLine CurrentDialogue { get; set; } =
+		new DialogueLine {
+			Speaker = "Maxi",
+			Text = "Hey! Are you my new race engineer?"
+		};
+
+	public string CurrentPhrase => phrases[phraseIndex];
+
+	public async Task NextPhrase()
+	{
+		if (phraseIndex < phrases.Length - 1)
+		{
+			phraseIndex++;
+		}
+		await OnContinue.InvokeAsync();
+	}
+
+	public void ShowDialogue(string text, bool showGreetImage = false)
+	{
+		CurrentDialogue = new DialogueLine
+		{
+			Speaker = "Maxi",
+			Text = text
+		};
+
+		showMaxieGreet = showGreetImage;
+		showMaxieSad = false;
+		StateHasChanged();
+	}
+
+	public void SetMaxieGreet(bool show)
+	{
+		showMaxieGreet = show;
+		showMaxieSad = false;
+		StateHasChanged();
+	}
+
+	public void SetMaxieSad(bool show)
+	{
+		showMaxieSad = show;
+		showMaxieGreet = false;
+		StateHasChanged();
+	}
+
+	public void ShowNameInputField()
+	{
+		showNameInput = true;
+		StateHasChanged();
+	}
+
+	public async Task SubmitName()
+	{
+		if (string.IsNullOrWhiteSpace(playerName))
+			return;
+
+		showNameInput = false;
+		await OnNameSubmitted.InvokeAsync(playerName);
+	}
+}
