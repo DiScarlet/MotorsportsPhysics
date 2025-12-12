@@ -89,17 +89,28 @@ else
       </div>
     }
 
-    @if (_grandPrixFinished)
+    @if (_grandPrixFinished && !_isEasy)
     {
       <div class="fixed inset-0 z-30 flex items-center justify-center bg-black/60">
         <div class="rounded-xl bg-white shadow-2xl p-8 max-w-md w-[92%] text-center">
           <h2 class="text-2xl font-extrabold mb-2">Grand Prix finished</h2>
           <p class="text-gray-700 mb-4">Congratulations! You’ve completed all laps and questions.</p>
           <p class="text-gray-700 mb-2">Your position: <strong>@_finalPosition</strong> / @_finalTotalCars</p>
-          <p class="text-gray-600">The car is no longer riding.</p>
-          <div class="mt-6 flex justify-center">
-            <button class="rounded-md bg-primary text-white px-6 py-2 font-semibold" @onclick="() => _grandPrixFinished = false">OK</button>
-          </div>
+          
+          @if (!_carAnimationComplete)
+          {
+            <p class="text-gray-600 text-sm">Waiting for car to finish...</p>
+            <div class="mt-6 flex justify-center">
+              <div class="animate-spin h-6 w-6 rounded-full border-2 border-primary border-t-transparent"></div>
+            </div>
+          }
+          else
+          {
+            <p class="text-gray-600">The car is no longer riding.</p>
+            <div class="mt-6 flex justify-center">
+              <button class="rounded-md bg-primary text-white px-6 py-2 font-semibold hover:bg-opacity-90" @onclick="NavigateToFinishMenu">OK</button>
+            </div>
+          }
         </div>
       </div>
     }
@@ -129,6 +140,7 @@ else
   private bool _quizFinished = false;
   private int _lastLapSeen = 0;
   private bool _grandPrixFinished = false;
+  private bool _carAnimationComplete = false;
   private DateTime? _raceStartedUtc;
   private DateTime? _raceFinishedUtc;
   private DateTime? _quizFinishedUtc;
@@ -265,10 +277,21 @@ else
       var carElapsed = (_raceStartedUtc.HasValue && _raceFinishedUtc.HasValue) ? (_raceFinishedUtc.Value - _raceStartedUtc.Value) : quizElapsed;
       var maxElapsed = quizElapsed > carElapsed ? quizElapsed : carElapsed;
       try { _quizRef?.RevealElapsedWith(maxElapsed); } catch { }
+      
+      // Set _grandPrixFinished and capture final rank for all levels
+      _raceFinishedUtc ??= DateTime.UtcNow;
       _grandPrixFinished = true;
-  StopProgressPump();
+      StopProgressPump();
       _ = StopCarAsync();
       _ = CaptureFinalRankAsync();
+      
+      // For Easy level only, navigate immediately without waiting for car to finish
+      if (_isEasy)
+      {
+        _ = Task.Delay(100).ContinueWith(_ => NavigateToFinishMenuAsync());
+        return Task.CompletedTask;
+      }
+      
       StateHasChanged();
       _quizFinished = false;
     }
@@ -309,10 +332,16 @@ else
       var carElapsed = (_raceStartedUtc.HasValue && _raceFinishedUtc.HasValue) ? (_raceFinishedUtc.Value - _raceStartedUtc.Value) : quizElapsed;
       var maxElapsed = quizElapsed > carElapsed ? quizElapsed : carElapsed;
       try { _quizRef?.RevealElapsedWith(maxElapsed); } catch { }
-      _grandPrixFinished = true;
-      StopProgressPump();
-      _ = StopCarAsync();
-      _ = CaptureFinalRankAsync();
+      
+      // Only show the modal for Medium and Hard (not Easy)
+      if (!_isEasy)
+      {
+        _grandPrixFinished = true;
+        StopProgressPump();
+        _ = StopCarAsync();
+        _ = CaptureFinalRankAsync();
+      }
+      StateHasChanged();
       StateHasChanged();
     }
     return;
@@ -358,6 +387,8 @@ else
     {
       if (_isEasy && _easyRace is not null) await _easyRace.StopAsync();
       else if (!_isEasy && _mediumRace is not null) await _mediumRace.StopAsync();
+      _carAnimationComplete = true;
+      StateHasChanged();
     }
     catch { }
   }
@@ -488,5 +519,75 @@ else
   public void Dispose()
   {
     StopProgressPump();
+  }
+
+  private async Task NavigateToFinishMenuAsync()
+  {
+    try
+    {
+        var correctCount = _quizRef?.GetCorrectCount() ?? 0;
+        var totalQuestions = _quizRef?.GetTotalSteps() ?? 0;
+        var unansweredCount = _quizRef?.GetUnansweredCount() ?? 0;
+        var elapsedSeconds = (int)((_raceFinishedUtc ?? DateTime.UtcNow)
+            .Subtract(_raceStartedUtc ?? DateTime.UtcNow)
+            .TotalSeconds);
+
+        var queryParams = new List<string>
+        {
+            $"correct={Uri.EscapeDataString(correctCount.ToString())}",
+            $"total={Uri.EscapeDataString(totalQuestions.ToString())}",
+            $"unanswered={Uri.EscapeDataString(unansweredCount.ToString())}",
+            $"difficulty={Uri.EscapeDataString(_label)}",
+            $"topic={Uri.EscapeDataString(_topic)}",
+            $"raceMode={Uri.EscapeDataString(_raceMode.ToString())}",
+            $"placement={Uri.EscapeDataString(_finalPosition.ToString())}",
+            $"totalCars={Uri.EscapeDataString(_finalTotalCars.ToString())}",
+            $"elapsedSeconds={Uri.EscapeDataString(elapsedSeconds.ToString())}"
+        };
+
+        var queryString = string.Join("&", queryParams);
+        Nav.NavigateTo($"/finish-menu?{queryString}");
+    }
+    catch (Exception ex)
+    {
+        // Fallback in case of error
+        System.Diagnostics.Debug.WriteLine($"Navigation error: {ex.Message}");
+        Nav.NavigateTo("/finish-menu");
+    }
+  }
+
+  private void NavigateToFinishMenu()
+  {
+    try
+    {
+        var correctCount = _quizRef?.GetCorrectCount() ?? 0;
+        var totalQuestions = _quizRef?.GetTotalSteps() ?? 0;
+        var unansweredCount = _quizRef?.GetUnansweredCount() ?? 0;
+        var elapsedSeconds = (int)((_raceFinishedUtc ?? DateTime.UtcNow)
+            .Subtract(_raceStartedUtc ?? DateTime.UtcNow)
+            .TotalSeconds);
+
+        var queryParams = new List<string>
+        {
+            $"correct={Uri.EscapeDataString(correctCount.ToString())}",
+            $"total={Uri.EscapeDataString(totalQuestions.ToString())}",
+            $"unanswered={Uri.EscapeDataString(unansweredCount.ToString())}",
+            $"difficulty={Uri.EscapeDataString(_label)}",
+            $"topic={Uri.EscapeDataString(_topic)}",
+            $"raceMode={Uri.EscapeDataString(_raceMode.ToString())}",
+            $"placement={Uri.EscapeDataString(_finalPosition.ToString())}",
+            $"totalCars={Uri.EscapeDataString(_finalTotalCars.ToString())}",
+            $"elapsedSeconds={Uri.EscapeDataString(elapsedSeconds.ToString())}"
+        };
+
+        var queryString = string.Join("&", queryParams);
+        Nav.NavigateTo($"/finish-menu?{queryString}");
+    }
+    catch (Exception ex)
+    {
+        // Fallback in case of error
+        System.Diagnostics.Debug.WriteLine($"Navigation error: {ex.Message}");
+        Nav.NavigateTo("/finish-menu");
+    }
   }
 }

@@ -1,0 +1,243 @@
+@page "/finish-menu"
+@attribute [AllowAnonymous]
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.WebUtilities
+@using Microsoft.AspNetCore.Authorization
+@using MotorsportsPhysics.Components.Pages
+@inject NavigationManager Nav
+
+<PageTitle>Race Results</PageTitle>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 min-h-screen bg-white">
+
+    <!-- LEFT: Maxie with feedback -->
+    <div class="flex items-center justify-center p-8">
+        <div class="relative w-full">
+            <!-- Background -->
+            <img src="/images/Maxie/Maxie-in-car.png"
+                 alt="Maxie Background"
+                 class="w-full object-contain" />
+
+            <!-- Dialogue Bubble -->
+            <img src="/images/Maxie/bubble-left.png"
+                 alt="Bubble"
+                 class="absolute top-[0%] left-[8%] w-20% h-42% object-contain" />
+
+            <!-- Feedback Text -->
+            <div class="absolute top-[9%] left-[52%] transform -translate-x-1/2 w-96 text-center">
+                <p class="text-black text-xl font-semibold leading-snug">
+                    @MaxieFeedback
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT: Results -->
+    <div class="p-8 bg-white overflow-y-auto">
+
+        <h1 class="text-3xl font-bold mb-6">Race Complete!</h1>
+
+        <!-- Score Card -->
+        <div class="rounded-xl border border-primary/20 bg-primary/10 px-6 py-6 mb-6">
+            <p class="text-sm text-gray-600 mb-2">Your Score</p>
+            <p class="text-5xl font-extrabold text-primary mb-2">@CorrectCount / @TotalQuestions</p>
+            <p class="text-gray-700">@PercentageDisplay%</p>
+        </div>
+
+        <!-- Details -->
+        <div class="space-y-4 mb-8">
+            @if (!string.IsNullOrWhiteSpace(_difficulty))
+            {
+                <div class="rounded-lg border border-gray-200 p-4">
+                    <p class="text-sm text-gray-600">Difficulty</p>
+                    <p class="text-lg font-semibold text-gray-800">@_difficulty</p>
+                </div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(_topic))
+            {
+                <div class="rounded-lg border border-gray-200 p-4">
+                    <p class="text-sm text-gray-600">Topic</p>
+                    <p class="text-lg font-semibold text-gray-800">@_topic</p>
+                </div>
+            }
+
+            @if (_elapsed.HasValue)
+            {
+                <div class="rounded-lg border border-gray-200 p-4">
+                    <p class="text-sm text-gray-600">Time to Complete</p>
+                    <p class="text-lg font-semibold text-gray-800">@_elapsed.Value.ToString(@"m\:ss")</p>
+                </div>
+            }
+
+            @if (_raceMode && _placement.HasValue)
+            {
+                <div class="rounded-lg border border-gray-200 p-4">
+                    <p class="text-sm text-gray-600">Race Result</p>
+                    <p class="text-lg font-semibold text-gray-800">
+                        @(_placement == 1 ? "🏆 You Won!" : $"Finished {_placement} of {_totalCars}")
+                    </p>
+                </div>
+            }
+        </div>
+
+        <!-- Performance Breakdown -->
+        <div class="rounded-xl border border-primary/20 bg-gray-50 px-6 py-4 mb-8">
+            <h3 class="font-semibold text-gray-800 mb-3">Performance</h3>
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Correct Answers</span>
+                    <span class="font-semibold text-green-600">@CorrectCount</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Incorrect Answers</span>
+                    <span class="font-semibold text-red-600">@IncorrectCount</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Unanswered</span>
+                    <span class="font-semibold text-amber-600">@UnansweredCount</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3">
+            @if (string.Equals(_difficulty, "Easy", StringComparison.OrdinalIgnoreCase))
+            {
+                <a class="flex-1 rounded-lg bg-primary text-white px-4 py-3 font-semibold text-center hover:bg-opacity-90"
+                   href="/race-menu">
+                    Back to Menu
+                </a>
+            }
+            else
+            {
+                <a class="flex-1 rounded-lg bg-primary text-white px-4 py-3 font-semibold text-center hover:bg-opacity-90"
+                   href="/race-menu">
+                    Back to Menu
+                </a>
+                <button class="flex-1 rounded-lg border border-primary px-4 py-3 font-semibold text-primary hover:bg-primary/10"
+                        @onclick="TryAgain">
+                    Try Again
+                </button>
+            }
+        </div>
+
+        <div class="mt-6">
+            <a class="text-primary hover:underline text-sm" href="/topics">Browse Topics</a>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int CorrectCount = 0;
+    private int TotalQuestions = 0;
+    private int IncorrectCount => TotalQuestions - CorrectCount - UnansweredCount;
+    private int UnansweredCount = 0;
+    private int PercentageDisplay => TotalQuestions > 0 ? (int)Math.Round((double)CorrectCount / TotalQuestions * 100) : 0;
+    
+    private string _difficulty = "";
+    private string _topic = "";
+    private TimeSpan? _elapsed;
+    private bool _raceMode = false;
+    private int? _placement;
+    private int _totalCars = 6;
+
+    private string CurrentSprite => 
+        PercentageDisplay >= 90 ? "/images/Maxie/Maxie-greet.png" :
+        PercentageDisplay >= 70 ? "/images/Maxie/Maxie-neutral.png" :
+        PercentageDisplay >= 50 ? "/images/Maxie/Maxie-medium.png" :
+        "/images/Maxie/Maxie-sad.png";
+
+    private string MaxieFeedback => GetMaxieFeedback();
+
+    private string GetMaxieFeedback()
+    {
+        return PercentageDisplay switch
+        {
+            0 => "No points yet — that's okay! Let's try again together and learn each step.",
+            10 => "Nice first try — one correct! You're on the road to getting better.",
+            20 => "Two down — good progress! Keep practicing and those answers will stack up.",
+            30 => "Three — nice momentum! You're starting to get the hang of it.",
+            40 => "Four — solid work! Focus a touch more on the tricky parts.",
+            50 => "Five — halfway there! A few more tweaks and you'll be cruising.",
+            60 => "Six — very good! You're consistent; keep sharpening those techniques.",
+            70 => "Seven — excellent effort! You're handling the concepts confidently.",
+            80 => "Eight — awesome! You're almost perfect; just a little polish left.",
+            90 => "Nine — fantastic! You're nailing it; one more to reach perfection.",
+            100 => "Perfect score — incredible! You aced it, superstar — time for a victory lap!",
+            _ => GetFallbackFeedback()
+        };
+    }
+
+    private string GetFallbackFeedback()
+    {
+        if (PercentageDisplay >= 90) return "Perfect score — incredible! You aced it, superstar — time for a victory lap!";
+        if (PercentageDisplay >= 80) return "Nine — fantastic! You're nailing it; one more to reach perfection.";
+        if (PercentageDisplay >= 70) return "Seven — excellent effort! You're handling the concepts confidently.";
+        if (PercentageDisplay >= 60) return "Six — very good! You're consistent; keep sharpening those techniques.";
+        if (PercentageDisplay >= 50) return "Five — halfway there! A few more tweaks and you'll be cruising.";
+        return "Let's focus and try again. Every attempt makes you stronger!";
+    }
+
+    protected override void OnInitialized()
+    {
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        var query = QueryHelpers.ParseQuery(uri.Query);
+
+        // TEST MODE: Use defaults if test parameter is present
+        bool testMode = query.TryGetValue("test", out var testParam);
+        
+        if (testMode)
+        {
+            CorrectCount = 7;
+            TotalQuestions = 10;
+            UnansweredCount = 1;
+            _difficulty = "Medium";
+            _topic = "cornering";
+            _raceMode = true;
+            _placement = 2;
+            _totalCars = 6;
+            _elapsed = TimeSpan.FromSeconds(125);
+            return; // Skip parsing the rest
+        }
+
+        if (query.TryGetValue("correct", out var correct) && int.TryParse(correct.ToString(), out var c))
+            CorrectCount = c;
+        
+        if (query.TryGetValue("total", out var total) && int.TryParse(total.ToString(), out var t))
+            TotalQuestions = t;
+        
+        if (query.TryGetValue("unanswered", out var unanswered) && int.TryParse(unanswered.ToString(), out var u))
+            UnansweredCount = u;
+
+        if (query.TryGetValue("difficulty", out var difficulty))
+            _difficulty = difficulty.ToString();
+
+        if (query.TryGetValue("topic", out var topic))
+            _topic = topic.ToString();
+
+        if (query.TryGetValue("raceMode", out var raceMode) && bool.TryParse(raceMode.ToString(), out var rm))
+            _raceMode = rm;
+
+        if (query.TryGetValue("placement", out var placement) && int.TryParse(placement.ToString(), out var p))
+            _placement = p;
+
+        if (query.TryGetValue("totalCars", out var totalCars) && int.TryParse(totalCars.ToString(), out var tc))
+            _totalCars = tc;
+
+        if (query.TryGetValue("elapsedSeconds", out var elapsedSeconds) && int.TryParse(elapsedSeconds.ToString(), out var es))
+            _elapsed = TimeSpan.FromSeconds(es);
+    }
+
+    private void TryAgain()
+    {
+        var topicQuery = string.IsNullOrEmpty(_topic) ? "" : $"&topic={_topic}";
+        Nav.NavigateTo($"/race-menu?difficulty={_difficulty}{topicQuery}");
+    }
+
+    private void GoToReport()
+    {
+        // Navigate to leaderboard or report page
+        Nav.NavigateTo("/leaderboard");
+    }
+}
