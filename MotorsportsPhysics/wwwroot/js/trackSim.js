@@ -35,6 +35,7 @@ export function init(svgEl, opts = {}) {
   let pxPerSec = pxPerSecBase * penaltyMul;
   let startTime = 0;
   let traveled = 0; // pixels along the path
+  let prevTraveled = 0; // previous frame's traveled position for lap crossing detection
   // Absolute distance traveled accumulators (px) for progress reporting
   let userAbsTraveled = 0; // user car
   /** @type {Map<SVGImageElement, number>} */
@@ -389,84 +390,86 @@ export function init(svgEl, opts = {}) {
       tickers.add(ticker);
       testTickerAttached = true;
     }
-    // Attach a non-halting logger that reports each time we return near the starting coordinate (with hysteresis)
-    // If you set these to 0, we will use a tiny epsilon so floating-point rounding doesn't prevent a trigger
-  const innerR_log = 1, outerR_log = 1;
-    const EPS_LOG = 0.25; // px
-    const innerEff = innerR_log <= 0 ? EPS_LOG : innerR_log;
-    const outerEff = outerR_log <= 0 ? innerEff + EPS_LOG : Math.max(outerR_log, innerEff + EPS_LOG);
-    // Start inside so we only report after leaving and returning
-    let wasOutside_log = false;
-    let lastReportMs = 0;
-    const logger = (dt) => {
+    // SINGLE SOURCE OF TRUTH FOR LAP COUNTING
+    // Detect when traveled crosses the startLen boundary (exactly once per lap)
+    const lapTicker = (dt) => {
       const nowMs = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-      const p = path.getPointAtLength(traveled);
-      const m = { x: p.x * s + tx, y: p.y * s + ty };
-      const dx = m.x - startX, dy = m.y - startY;
-      const dist = Math.hypot(dx, dy);
-      if (wasOutside_log && dist <= innerEff) {
-        if (!lastReportMs || nowMs - lastReportMs > 500) {
-          lapCounter += 1;
-          dlog('start-return', { dist: Number(dist.toFixed(2)), lap: lapCounter, answeredCount });
-          try { emitSpeed(true); } catch {}
-          try { emitLap(true); } catch {}
-          // Snapshot telemetry for all cars at this lap crossing
-          try {
-            const elapsedMs = Math.max(0, nowMs - (raceStartMsGlobal || nowMs));
-            const samples = cars.map((c, idx) => {
-              const isUser = (c === userCar);
-              const distancePx = isUser ? userAbsTraveled : (aiAbsTraveled.get(c) || 0);
-              return { idx, id: c.id || '', isUser, color: extractColor(c), distancePx };
-            });
-            lapsTelemetry.push({ lap: lapCounter, elapsedMs, samples });
-          } catch { /* ignore */ }
-          // AI: after each completed user lap, give all non-user cars their per-car absolute speed boost
-          try {
-            const applied = [];
-            for (const c of cars) {
-              if (c === userCar) continue;
-              const cur = aiAbsSpeed.get(c) || 0;
-              const inc = aiLapBoost.get(c) ?? (aiLapBoostMin + Math.random() * Math.max(0, aiLapBoostMax - aiLapBoostMin));
-              aiAbsSpeed.set(c, cur + inc);
-              applied.push({ idx: cars.indexOf(c), inc: Number(inc.toFixed(1)) });
-            }
-            dlog('ai:lapBoost', { lap: lapCounter, applied });
-          } catch { /* ignore */ }
-          // If a lap-long penalty was set, and we've reached or passed the target lap, clear it now
-          if (penaltyUntilLap !== null && lapCounter >= penaltyUntilLap) {
-            penaltyUntilLap = null;
-            penaltyMul = 1.0;
-            pxPerSec = pxPerSecBase * penaltyMul;
-            dlog('penalty:clearOnLap', { lapCounter, base: pxPerSecBase, pxPerSec });
-            emitSpeed(true);
-          }
-          lastReportMs = nowMs;
-          // Gate: if enabled and user hasn't answered at least 'lapCounter' questions,
-          // stop ONLY the user car at start/finish but keep the engine running so AI continue moving.
-          if (gateByAnsweredCount && answeredCount < lapCounter) {
-            // Snap to the exact start point, then stop
-            try { traveled = startLen; render(traveled); } catch {}
-            try { setSpeed(0); } catch {}
-            try { emitSpeed(true); } catch {}
-            // Keep current lap value visible while paused
-            try { emitLap(true); } catch {}
-            pausedForQuestion = true;
-            // Do NOT pause the whole animation; keep RAF running so AI keep advancing
-            // Keep logger active for future laps
-            return false;
-          }
-          // If the question is already answered, keep running and continue logging future laps
-          wasOutside_log = false;
-          return false;
-        }
-        wasOutside_log = false;
-      } else if (!wasOutside_log && dist >= outerEff) {
-        wasOutside_log = true;
+      
+      // Detect boundary crossing between frames
+      // Car moves anticlockwise (traveled decreases), so startLen acts as the crossing point
+      let crossed = false;
+      
+      // Case 1: prevTraveled was above/at boundary, now below it (crossed backward)
+      if (prevTraveled >= startLen && traveled < startLen) {
+        crossed = true;
       }
+      // Case 2: both below, but wrapped (traveled reset from high to low)
+      else if (prevTraveled < startLen && traveled < startLen) {
+        // If traveled jumped significantly (wrapped), count it as a crossing
+        if (traveled < prevTraveled - total * 0.5) {
+          crossed = true;
+        }
+      }
+      
+      if (crossed) {
+        lapCounter += 1;
+        dlog('LAP', lapCounter, 'prev', Number(prevTraveled.toFixed(2)), 'curr', Number(traveled.toFixed(2)));
+        
+        try { emitSpeed(true); } catch {}
+        try { emitLap(true); } catch {}
+        
+        // Snapshot telemetry for all cars at this lap crossing
+        try {
+          const elapsedMs = Math.max(0, nowMs - (raceStartMsGlobal || nowMs));
+          const samples = cars.map((c, idx) => {
+            const isUser = (c === userCar);
+            const distancePx = isUser ? userAbsTraveled : (aiAbsTraveled.get(c) || 0);
+            return { idx, id: c.id || '', isUser, color: extractColor(c), distancePx };
+          });
+          lapsTelemetry.push({ lap: lapCounter, elapsedMs, samples });
+        } catch { /* ignore */ }
+        
+        // AI: after each completed user lap, give all non-user cars their per-car absolute speed boost
+        try {
+          const applied = [];
+          for (const c of cars) {
+            if (c === userCar) continue;
+            const cur = aiAbsSpeed.get(c) || 0;
+            const inc = aiLapBoost.get(c) ?? (aiLapBoostMin + Math.random() * Math.max(0, aiLapBoostMax - aiLapBoostMin));
+            aiAbsSpeed.set(c, cur + inc);
+            applied.push({ idx: cars.indexOf(c), inc: Number(inc.toFixed(1)) });
+          }
+          dlog('ai:lapBoost', { lap: lapCounter, applied });
+        } catch { /* ignore */ }
+        
+        // If a lap-long penalty was set, and we've reached or passed the target lap, clear it now
+        if (penaltyUntilLap !== null && lapCounter >= penaltyUntilLap) {
+          penaltyUntilLap = null;
+          penaltyMul = 1.0;
+          pxPerSec = pxPerSecBase * penaltyMul;
+          dlog('penalty:clearOnLap', { lapCounter, base: pxPerSecBase, pxPerSec });
+          emitSpeed(true);
+        }
+        
+        // Gate: if enabled and user hasn't answered at least 'lapCounter' questions,
+        // stop ONLY the user car at start/finish but keep the engine running so AI continue moving.
+        if (gateByAnsweredCount && answeredCount < lapCounter) {
+          // Snap to the exact start point, then stop
+          try { traveled = startLen; render(traveled); } catch {}
+          try { setSpeed(0); } catch {}
+          try { emitSpeed(true); } catch {}
+          // Keep current lap value visible while paused
+          try { emitLap(true); } catch {}
+          pausedForQuestion = true;
+          // Do NOT pause the whole animation; keep RAF running so AI keep advancing
+          // Keep ticker active for future laps
+        }
+      }
+      
+      prevTraveled = traveled;
       return false;
     };
-    tickers.add(logger);
-    rafId = requestAnimationFrame(step);
+    tickers.add(lapTicker);
   }
   function pause() {
     playing = false;
@@ -480,6 +483,7 @@ export function init(svgEl, opts = {}) {
   function reset() {
     pause();
     traveled = 0;
+    prevTraveled = 0;
     userAbsTraveled = 0;
     try {
       aiAbsTraveled.clear();
@@ -603,38 +607,17 @@ export function init(svgEl, opts = {}) {
     return new Promise((resolve) => {
       const ticker = (dt) => {
         const nowMs = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-        // If shifted traveled increased, we wrapped past the visible start/finish boundary
-        const curShift = shifted(traveled);
-        // Ignore wraps in the first 500ms to avoid false early wrap at movement start
+        // Ignore checks in the first 500ms to avoid false early trigger at movement start
         if (nowMs - playStartMs < 500) {
-          lastShift = curShift;
           return false;
         }
         // accumulate distance using current speed
         accumDist += pxPerSec * dt;
-        // Proximity-based lap count to starting coordinate (hysteresis)
-        const curPoint = path.getPointAtLength(traveled);
-        const curX = curPoint.x * s + tx;
-        const curY = curPoint.y * s + ty;
-        const dx = curX - startX;
-        const dy = curY - startY;
-        const dist = Math.hypot(dx, dy);
-        if (wasOutside && dist <= innerR) {
-          lapsDone++;
-          wasOutside = false;
-          dlog('lap++ proximity', { lapsDone, dist: Number(dist.toFixed(2)) });
-        } else if (!wasOutside && dist >= outerR) {
-          wasOutside = true;
-        }
-        if (curShift > lastShift) {
-          lapsDone++;
-          dlog('wrap', { lapsDone, curShift: Number(curShift.toFixed(2)), lastShift: Number(lastShift.toFixed(2)) });
-        }
-        lastShift = curShift;
         const targetDist = targetLaps * total;
-        if (lapsDone >= targetLaps || accumDist >= targetDist) {
+        // Use lapCounter (the authoritative source) instead of proximity/wrap detection
+        if (lapCounter >= targetLaps || accumDist >= targetDist) {
           if (haltOnFinish && (!questionAnswered && gateByAnsweredCount)) {
-            dlog('halt', { reason: lapsDone >= targetLaps ? 'wraps' : 'distance-fallback', lapsDone, targetLaps, accumDist: Number(accumDist.toFixed(1)), targetDist: Number(targetDist.toFixed(1)) });
+            dlog('halt', { reason: lapCounter >= targetLaps ? 'laps' : 'distance-fallback', lapCounter, targetLaps, accumDist: Number(accumDist.toFixed(1)), targetDist: Number(targetDist.toFixed(1)) });
             // Snap to exact start for a perfect visual stop
             try { traveled = startLen; render(traveled); } catch {}
             try { setSpeed(0); } catch {}
